@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">Lab1</string>
+    <string name="animal_type">%1$s:</string>
+    <string name="animal_name">Name: %1$s</string>
+    <string name="animal_sex">Sex: %1$s</string>
+    <string name="animal_button_voice_loud">Voice (L)</string>
+    <string name="animal_button_voice_quiet">Voice (Q)</string>
+    <string-array name="dog_names">
+        <item>Sam</item>
+        <item>Dawg</item>
+        <item>Reaper</item>
+        <item>John</item>
+        <item>Zeus</item>
+    </string-array>
+    <string-array name="cat_names">
+        <item>Luna</item>
+        <item>Bella</item>
+        <item>Tomas</item>
+        <item>Kitty</item>
+        <item>Andy</item>
+    </string-array>
+    <string-array name="fish_names">
+        <item>Bubbles</item>
+        <item>Bruce</item>
+        <item>Goldie</item>
+        <item>Markus</item>
+        <item>Angel</item>
+    </string-array>
+</resources>
