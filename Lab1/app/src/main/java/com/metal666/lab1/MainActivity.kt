@@ -5,7 +5,7 @@ import android.os.Bundle
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.metal666.lab1.data.animals.Animal
+import com.metal666.lab1.data.animals.AnimalBase
 import com.metal666.lab1.data.animals.Cat
 import com.metal666.lab1.data.animals.Dog
 import com.metal666.lab1.data.animals.Fish
@@ -14,7 +14,7 @@ import kotlin.random.Random
 
 class MainActivity : AppCompatActivity() {
 
-	private val animals: MutableList<Animal> = mutableListOf()
+	private val animals: MutableList<AnimalBase> = mutableListOf()
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -36,9 +36,9 @@ class MainActivity : AppCompatActivity() {
 
 			when(Random.nextInt(0, 3)) {
 
-				0 -> animals.add(Dog(resources.getStringArray(R.array.dog_names).random(), Animal.Sex.values().random()))
-				1 -> animals.add(Cat(resources.getStringArray(R.array.cat_names).random(), Animal.Sex.values().random()))
-				2 -> animals.add(Fish(resources.getStringArray(R.array.fish_names).random(), Animal.Sex.values().random()))
+				0 -> animals.add(Dog(resources.getStringArray(R.array.dog_names).random(), AnimalBase.Sex.values().random()))
+				1 -> animals.add(Cat(resources.getStringArray(R.array.cat_names).random(), AnimalBase.Sex.values().random()))
+				2 -> animals.add(Fish(resources.getStringArray(R.array.fish_names).random(), AnimalBase.Sex.values().random()))
 
 			}
 

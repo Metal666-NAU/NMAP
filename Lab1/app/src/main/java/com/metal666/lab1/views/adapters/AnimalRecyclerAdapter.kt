@@ -9,12 +9,12 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import com.metal666.lab1.R
-import com.metal666.lab1.data.animals.Animal
+import com.metal666.lab1.data.animals.AnimalBase
 import com.metal666.lab1.data.animals.IHasVoice
 
-class AnimalRecyclerAdapter(private val context: Context, private val animals: List<Animal>) : RecyclerView.Adapter<AnimalRecyclerAdapter.AnimalRecyclerHolder>() {
+class AnimalRecyclerAdapter(private val context: Context, private val animals: List<AnimalBase>) : RecyclerView.Adapter<AnimalRecyclerAdapter.AnimalRecyclerHolder>() {
 
-	private val onVoice: (Animal, (IHasVoice) -> String) -> Unit = { animal, voice ->
+	private val onVoice: (AnimalBase, (IHasVoice) -> String) -> Unit = { animal, voice ->
 
 		val builder = AlertDialog.Builder(context)
 
@@ -32,9 +32,9 @@ class AnimalRecyclerAdapter(private val context: Context, private val animals: L
 
 	}
 
-	private val onLoudVoice: (Animal) -> Unit = { animal -> onVoice(animal) { hasVoice -> hasVoice.loudVoice() } }
+	private val onLoudVoice: (AnimalBase) -> Unit = { animal -> onVoice(animal) { hasVoice -> hasVoice.loudVoice() } }
 
-	private val onQuietVoice: (Animal) -> Unit = { animal -> onVoice(animal) { hasVoice -> hasVoice.quietVoice() } }
+	private val onQuietVoice: (AnimalBase) -> Unit = { animal -> onVoice(animal) { hasVoice -> hasVoice.quietVoice() } }
 
 	override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AnimalRecyclerHolder =
 		AnimalRecyclerHolder(LayoutInflater

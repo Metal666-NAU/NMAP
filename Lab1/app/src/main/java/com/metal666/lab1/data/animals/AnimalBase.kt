@@ -1,6 +1,6 @@
 package com.metal666.lab1.data.animals
 
-abstract class Animal(var name: String, val sex: Sex) {
+abstract class AnimalBase(var name: String, val sex: Sex) {
 
 	var age: Float = 0f
 

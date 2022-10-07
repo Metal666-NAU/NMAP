@@ -1,6 +1,6 @@
 package com.metal666.lab1.data.animals
 
-class Dog(name: String, sex: Sex) : Animal(name, sex), IHasVoice {
+class Dog(name: String, sex: Sex) : AnimalBase(name, sex), IHasVoice {
 
 	override fun loudVoice() = say("YOOO DAWWGGG, WASSUP")
 
