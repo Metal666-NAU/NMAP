@@ -1,0 +1,3 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.metal666_nau.lab_2">
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>
