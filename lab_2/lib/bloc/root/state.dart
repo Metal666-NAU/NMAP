@@ -46,7 +46,7 @@ class OperationElement extends CalculationElement {
 enum Operation {
   add("+"),
   subtract("-"),
-  multiply("*"),
+  multiply("×"),
   divide("/");
 
   final String textRepresentation;

@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 
 import '../bloc/root/bloc.dart';
 import '../bloc/root/state.dart';
@@ -26,31 +26,62 @@ class Root extends HookWidget {
   Widget _calculatorPage(final PageController pageController) =>
       BlocBuilder<RootBloc, RootState>(
         builder: (context, state) {
-          Widget inputButton({required int index}) => ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                onPressed: () {},
-                child: Text(index.toString()),
-              );
-
           Widget actionButton({
             required String text,
             void Function()? onPressed,
             bool accent = false,
           }) =>
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      accent ? Theme.of(context).colorScheme.secondary : null,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              Expanded(
+                child: NeumorphicButton(
+                  style: NeumorphicStyle(
+                    color: accent ? NeumorphicTheme.accentColor(context) : null,
+                    shape: NeumorphicShape.flat,
+                    depth: accent ? -6 : null,
+                    boxShape: const NeumorphicBoxShape.stadium(),
+                  ),
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 0,
+                    horizontal: 5,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 5,
+                    horizontal: 14,
+                  ),
+                  onPressed: onPressed,
+                  child: Center(
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: 25,
+                        color: accent
+                            ? NeumorphicTheme.of(context)
+                                ?.value
+                                .darkTheme
+                                ?.defaultTextColor
+                            : null,
+                      ),
+                    ),
                   ),
                 ),
-                onPressed: onPressed,
-                child: Text(text),
+              );
+
+          Widget inputButton({required int index}) => NeumorphicButton(
+                style: NeumorphicStyle(
+                  shape: NeumorphicShape.concave,
+                  boxShape: NeumorphicBoxShape.roundRect(
+                    BorderRadius.circular(30),
+                  ),
+                ),
+                onPressed: () {},
+                child: Center(
+                  child: Text(
+                    index.toString(),
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w200,
+                    ),
+                  ),
+                ),
               );
 
           return Column(
@@ -62,25 +93,25 @@ class Root extends HookWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
-                        child: Text(
+                        child: NeumorphicText(
                           state.calculationElements
                               .map((element) => element.toString())
                               .join(),
-                          style: Theme.of(context).textTheme.displaySmall,
+                          textStyle: NeumorphicTextStyle(fontSize: 48),
                           textAlign: TextAlign.end,
                         ),
                       ),
                       Expanded(
-                        child: Text(
+                        child: NeumorphicText(
                           "=",
-                          style: Theme.of(context).textTheme.headlineMedium,
+                          textStyle: NeumorphicTextStyle(fontSize: 48),
                           textAlign: TextAlign.end,
                         ),
                       ),
                       Expanded(
-                        child: Text(
+                        child: NeumorphicText(
                           state.calculationResult?.toString() ?? "",
-                          style: Theme.of(context).textTheme.displaySmall,
+                          textStyle: NeumorphicTextStyle(fontSize: 48),
                           textAlign: TextAlign.end,
                         ),
                       ),
@@ -92,23 +123,20 @@ class Root extends HookWidget {
                 onVerticalDragUpdate: (details) {},
                 child: Column(
                   children: [
-                    _panelCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: Operation.values
-                              .map((operation) => actionButton(
-                                    text: operation.textRepresentation,
-                                    onPressed: () {},
-                                  ))
-                              .toList()
-                            ..add(actionButton(
-                              text: "=",
-                              onPressed: () {},
-                              accent: true,
-                            )),
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        children: Operation.values
+                            .map((operation) => actionButton(
+                                  text: operation.textRepresentation,
+                                  onPressed: () {},
+                                ))
+                            .toList()
+                          ..add(actionButton(
+                            text: "=",
+                            onPressed: () {},
+                            accent: true,
+                          )),
                       ),
                     ),
                     _panelCard(
@@ -142,11 +170,12 @@ class Root extends HookWidget {
       BlocBuilder<RootBloc, RootState>(
         builder: (context, state) => Column(
           children: [
+            const SizedBox(height: 25),
             _pageSwipeButton(pageController: pageController, down: false),
             Expanded(
               child: _panelCard(
                 child: Center(
-                  child: Text(
+                  child: NeumorphicText(
                     state.calculationResult == null
                         ? "Немає відповіді"
                         : state.calculationResult.toString(),
@@ -158,9 +187,12 @@ class Root extends HookWidget {
         ),
       );
 
-  Widget _panelCard({Widget? child}) => Card(
+  Widget _panelCard({bool raised = true, Widget? child}) => Neumorphic(
         margin: const EdgeInsets.all(10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        style: NeumorphicStyle(
+          shape: NeumorphicShape.convex,
+          depth: raised ? null : -4,
+        ),
         child: child,
       );
 
@@ -171,8 +203,16 @@ class Root extends HookWidget {
     const Duration duration = Duration(seconds: 1);
     const Curve curve = ElasticOutCurve(0.75);
 
-    return IconButton(
-      icon: Icon(down ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+    return NeumorphicButton(
+      margin: const EdgeInsets.all(10),
+      style: const NeumorphicStyle(depth: -4),
+      child: Builder(
+        builder: (context) => Icon(
+          down ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+          size: 25,
+          color: NeumorphicTheme.defaultTextColor(context),
+        ),
+      ),
       onPressed: () => down
           ? pageController.nextPage(
               duration: duration,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 
 import 'bloc/root/bloc.dart';
 import 'views/root.dart';
@@ -12,14 +13,17 @@ class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => NeumorphicApp(
         title: 'Calculator (lab_2)',
-        theme: ThemeData(
-          colorScheme: const ColorScheme.dark(
-            primary: Colors.deepPurple,
-            onPrimary: Colors.white,
-            secondary: Colors.red,
-          ),
+        theme: NeumorphicThemeData(
+          accentColor: Colors.deepPurple.shade400,
+          variantColor: Colors.red,
+        ),
+        darkTheme: NeumorphicThemeData.dark(
+          accentColor: Colors.deepPurple.shade400,
+          variantColor: Colors.red,
+          shadowLightColor: Colors.black87,
+          shadowLightColorEmboss: Colors.black87,
         ),
         home: Scaffold(
           body: BlocProvider(
