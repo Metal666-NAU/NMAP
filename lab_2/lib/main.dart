@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'bloc/root/bloc.dart';
 import 'views/root.dart';
 
 void main() {
@@ -13,8 +15,17 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
         title: 'Calculator (lab_2)',
         theme: ThemeData(
-          primarySwatch: Colors.purple,
+          colorScheme: const ColorScheme.dark(
+            primary: Colors.deepPurple,
+            onPrimary: Colors.white,
+            secondary: Colors.red,
+          ),
         ),
-        home: const Scaffold(body: Root()),
+        home: Scaffold(
+          body: BlocProvider(
+            create: (context) => RootBloc(),
+            child: const Root(),
+          ),
+        ),
       );
 }
