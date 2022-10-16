@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
+import 'package:lab_2/bloc/root/events.dart';
+import 'package:line_icons/line_icons.dart';
 
 import '../bloc/root/bloc.dart';
 import '../bloc/root/state.dart';
@@ -26,7 +28,7 @@ class Root extends HookWidget {
   Widget _calculatorPage(final PageController pageController) =>
       BlocBuilder<RootBloc, RootState>(
         builder: (context, state) {
-          Widget actionButton({
+          Widget smallButton({
             required String text,
             void Function()? onPressed,
             bool accent = false,
@@ -34,7 +36,11 @@ class Root extends HookWidget {
               Expanded(
                 child: NeumorphicButton(
                   style: NeumorphicStyle(
-                    color: accent ? NeumorphicTheme.accentColor(context) : null,
+                    color: onPressed == null
+                        ? NeumorphicTheme.disabledColor(context)
+                        : accent
+                            ? NeumorphicTheme.accentColor(context)
+                            : null,
                     shape: NeumorphicShape.flat,
                     depth: accent ? -6 : null,
                     boxShape: const NeumorphicBoxShape.stadium(),
@@ -48,71 +54,107 @@ class Root extends HookWidget {
                     horizontal: 14,
                   ),
                   onPressed: onPressed,
-                  child: Center(
-                    child: Text(
-                      text,
-                      style: TextStyle(
-                        fontSize: 25,
-                        color: accent
-                            ? NeumorphicTheme.of(context)
-                                ?.value
-                                .darkTheme
-                                ?.defaultTextColor
-                            : null,
-                      ),
+                  child: Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w200,
+                      color: accent
+                          ? NeumorphicTheme.of(context)
+                              ?.value
+                              .darkTheme
+                              ?.defaultTextColor
+                          : null,
                     ),
                   ),
                 ),
               );
 
-          Widget inputButton({required int index}) => NeumorphicButton(
+          Widget bigButton({
+            void Function()? onPressed,
+            int? index,
+            String? text,
+            IconData? icon,
+          }) =>
+              NeumorphicButton(
                 style: NeumorphicStyle(
+                  color: onPressed == null
+                      ? NeumorphicTheme.disabledColor(context)
+                      : index == null
+                          ? NeumorphicTheme.accentColor(context)
+                          : null,
                   shape: NeumorphicShape.concave,
                   boxShape: NeumorphicBoxShape.roundRect(
                     BorderRadius.circular(30),
                   ),
                 ),
-                onPressed: () {},
+                onPressed: onPressed,
                 child: Center(
-                  child: Text(
-                    index.toString(),
-                    style: const TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w200,
-                    ),
-                  ),
+                  child: Builder(builder: (context) {
+                    if (index != null) {
+                      return Text(
+                        index.toString(),
+                        style: const TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w200,
+                        ),
+                      );
+                    }
+                    if (text != null) {
+                      return Text(
+                        text,
+                        style: TextStyle(
+                          color: NeumorphicTheme.of(context)
+                              ?.value
+                              .darkTheme
+                              ?.defaultTextColor,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w200,
+                        ),
+                      );
+                    }
+                    if (icon != null) {
+                      return Icon(
+                        icon,
+                        color: NeumorphicTheme.of(context)
+                            ?.value
+                            .darkTheme
+                            ?.defaultTextColor,
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }),
                 ),
               );
 
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(10),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Expanded(
-                        child: NeumorphicText(
+                        child: Text(
                           state.calculationElements
                               .map((element) => element.toString())
                               .join(),
-                          textStyle: NeumorphicTextStyle(fontSize: 48),
-                          textAlign: TextAlign.end,
+                          style: const TextStyle(fontSize: 48),
                         ),
                       ),
-                      Expanded(
-                        child: NeumorphicText(
+                      const Expanded(
+                        child: Text(
                           "=",
-                          textStyle: NeumorphicTextStyle(fontSize: 48),
-                          textAlign: TextAlign.end,
+                          style: TextStyle(fontSize: 48),
                         ),
                       ),
                       Expanded(
-                        child: NeumorphicText(
+                        child: Text(
                           state.calculationResult?.toString() ?? "",
-                          textStyle: NeumorphicTextStyle(fontSize: 48),
-                          textAlign: TextAlign.end,
+                          style: const TextStyle(fontSize: 48),
                         ),
                       ),
                     ],
@@ -127,14 +169,23 @@ class Root extends HookWidget {
                       padding: const EdgeInsets.all(10),
                       child: Row(
                         children: Operation.values
-                            .map((operation) => actionButton(
+                            .map((operation) => smallButton(
                                   text: operation.textRepresentation,
-                                  onPressed: () {},
+                                  onPressed: !state.hasCalculationElements() ||
+                                          state
+                                              .lastCalculationElementIsOperation()
+                                      ? null
+                                      : () => context
+                                          .read<RootBloc>()
+                                          .add(AddOperationEvent(operation)),
                                 ))
                             .toList()
-                          ..add(actionButton(
+                          ..add(smallButton(
                             text: "=",
-                            onPressed: () {},
+                            onPressed: !state.hasCalculationElements() ||
+                                    state.lastCalculationElementIsOperation()
+                                ? null
+                                : () {},
                             accent: true,
                           )),
                       ),
@@ -149,11 +200,35 @@ class Root extends HookWidget {
                         physics: const NeverScrollableScrollPhysics(),
                         children: List<Widget>.generate(
                           9,
-                          (index) => inputButton(index: index),
+                          (index) => bigButton(
+                            onPressed: (() => context
+                                .read<RootBloc>()
+                                .add(AddNumberEvent(index + 1))),
+                            index: index + 1,
+                          ),
                         )..addAll([
-                            Container(),
-                            inputButton(index: 0),
-                            Container(),
+                            bigButton(
+                              onPressed: !state.hasCalculationElements()
+                                  ? null
+                                  : () => context
+                                      .read<RootBloc>()
+                                      .add(ClearElementsEvent()),
+                              text: "C",
+                            ),
+                            bigButton(
+                              onPressed: () => context
+                                  .read<RootBloc>()
+                                  .add(AddNumberEvent(0)),
+                              index: 0,
+                            ),
+                            bigButton(
+                              onPressed: !state.hasCalculationElements()
+                                  ? null
+                                  : () => context
+                                      .read<RootBloc>()
+                                      .add(RemoveElementEvent()),
+                              icon: Icons.backspace,
+                            ),
                           ]),
                       ),
                     ),
@@ -203,25 +278,27 @@ class Root extends HookWidget {
     const Duration duration = Duration(seconds: 1);
     const Curve curve = ElasticOutCurve(0.75);
 
-    return NeumorphicButton(
-      margin: const EdgeInsets.all(10),
-      style: const NeumorphicStyle(depth: -4),
-      child: Builder(
-        builder: (context) => Icon(
-          down ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-          size: 25,
-          color: NeumorphicTheme.defaultTextColor(context),
+    return Center(
+      child: NeumorphicButton(
+        margin: const EdgeInsets.all(10),
+        style: const NeumorphicStyle(depth: -4),
+        child: Builder(
+          builder: (context) => Icon(
+            down ? LineIcons.angleUp : LineIcons.angleDown,
+            size: 25,
+            color: NeumorphicTheme.defaultTextColor(context),
+          ),
         ),
+        onPressed: () => down
+            ? pageController.nextPage(
+                duration: duration,
+                curve: curve,
+              )
+            : pageController.previousPage(
+                duration: duration,
+                curve: curve,
+              ),
       ),
-      onPressed: () => down
-          ? pageController.nextPage(
-              duration: duration,
-              curve: curve,
-            )
-          : pageController.previousPage(
-              duration: duration,
-              curve: curve,
-            ),
     );
   }
 }

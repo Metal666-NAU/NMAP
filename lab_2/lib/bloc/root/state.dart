@@ -7,6 +7,12 @@ class RootState {
     this.calculationElements = const [],
   });
 
+  bool hasCalculationElements() => calculationElements.isNotEmpty;
+
+  bool lastCalculationElementIsOperation() => !hasCalculationElements()
+      ? false
+      : calculationElements.last is OperationElement;
+
   RootState copyWith({
     double? Function()? calculationResult,
     List<CalculationElement> Function()? calculationElements,

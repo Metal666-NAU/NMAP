@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
+import 'util/color_extensions.dart';
 
 import 'bloc/root/bloc.dart';
 import 'views/root.dart';
@@ -18,10 +18,12 @@ class MyApp extends StatelessWidget {
         theme: NeumorphicThemeData(
           accentColor: Colors.deepPurple.shade400,
           variantColor: Colors.red,
+          disabledColor: NeumorphicColors.background.darken(5),
         ),
         darkTheme: NeumorphicThemeData.dark(
           accentColor: Colors.deepPurple.shade400,
           variantColor: Colors.red,
+          disabledColor: NeumorphicColors.darkBackground.lighten(15),
           shadowLightColor: Colors.black87,
           shadowLightColorEmboss: Colors.black87,
         ),
