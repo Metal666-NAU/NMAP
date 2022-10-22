@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
@@ -14,14 +15,16 @@ class Root extends HookWidget {
   Widget build(BuildContext context) {
     final PageController pageController = usePageController();
 
-    return PageView(
-      controller: pageController,
-      physics: const BouncingScrollPhysics(),
-      scrollDirection: Axis.vertical,
-      children: [
-        _calculatorPage(pageController),
-        _resultsPage(pageController),
-      ],
+    return SafeArea(
+      child: PageView(
+        controller: pageController,
+        physics: const BouncingScrollPhysics(),
+        scrollDirection: Axis.vertical,
+        children: [
+          _calculatorPage(pageController),
+          _resultsPage(pageController),
+        ],
+      ),
     );
   }
 
@@ -138,23 +141,21 @@ class Root extends HookWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Expanded(
-                        child: Text(
-                          state.calculationElements
-                              .map((element) => element.toString())
-                              .join(),
+                        child: AutoSizeText(
+                          state.calculationElements.join(),
                           style: const TextStyle(fontSize: 48),
                         ),
                       ),
-                      const Expanded(
-                        child: Text(
-                          "=",
-                          style: TextStyle(fontSize: 48),
-                        ),
+                      const Text(
+                        "=",
+                        style: TextStyle(fontSize: 48, height: 0.7),
                       ),
                       Expanded(
-                        child: Text(
-                          state.calculationResult?.toString() ?? "",
-                          style: const TextStyle(fontSize: 48),
+                        child: FittedBox(
+                          child: Text(
+                            state.calculationResult?.toString() ?? " ",
+                            style: const TextStyle(fontSize: 48),
+                          ),
                         ),
                       ),
                     ],
@@ -177,7 +178,7 @@ class Root extends HookWidget {
                                       ? null
                                       : () => context
                                           .read<RootBloc>()
-                                          .add(AddOperationEvent(operation)),
+                                          .add(AddOperation(operation)),
                                 ))
                             .toList()
                           ..add(smallButton(
@@ -185,7 +186,8 @@ class Root extends HookWidget {
                             onPressed: !state.hasCalculationElements() ||
                                     state.lastCalculationElementIsOperation()
                                 ? null
-                                : () {},
+                                : () =>
+                                    context.read<RootBloc>().add(Calculate()),
                             accent: true,
                           )),
                       ),
@@ -201,9 +203,9 @@ class Root extends HookWidget {
                         children: List<Widget>.generate(
                           9,
                           (index) => bigButton(
-                            onPressed: (() => context
+                            onPressed: () => context
                                 .read<RootBloc>()
-                                .add(AddNumberEvent(index + 1))),
+                                .add(AddNumber(BigInt.from(index + 1))),
                             index: index + 1,
                           ),
                         )..addAll([
@@ -212,13 +214,13 @@ class Root extends HookWidget {
                                   ? null
                                   : () => context
                                       .read<RootBloc>()
-                                      .add(ClearElementsEvent()),
+                                      .add(ClearElements()),
                               text: "C",
                             ),
                             bigButton(
                               onPressed: () => context
                                   .read<RootBloc>()
-                                  .add(AddNumberEvent(0)),
+                                  .add(AddNumber(BigInt.from(0))),
                               index: 0,
                             ),
                             bigButton(
@@ -226,7 +228,7 @@ class Root extends HookWidget {
                                   ? null
                                   : () => context
                                       .read<RootBloc>()
-                                      .add(RemoveElementEvent()),
+                                      .add(RemoveElement()),
                               icon: Icons.backspace,
                             ),
                           ]),
@@ -245,7 +247,6 @@ class Root extends HookWidget {
       BlocBuilder<RootBloc, RootState>(
         builder: (context, state) => Column(
           children: [
-            const SizedBox(height: 25),
             _pageSwipeButton(pageController: pageController, down: false),
             Expanded(
               child: _panelCard(

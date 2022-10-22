@@ -9,9 +9,11 @@ class RootState {
 
   bool hasCalculationElements() => calculationElements.isNotEmpty;
 
-  bool lastCalculationElementIsOperation() => !hasCalculationElements()
-      ? false
-      : calculationElements.last is OperationElement;
+  bool lastCalculationElementIsOperation() =>
+      hasCalculationElements() && calculationElements.last is OperationElement;
+
+  String mathString() =>
+      calculationElements.map((element) => element.toMathString()).join();
 
   RootState copyWith({
     double? Function()? calculationResult,
@@ -29,15 +31,20 @@ class RootState {
 
 abstract class CalculationElement {
   const CalculationElement();
+
+  String toMathString();
 }
 
 class NumberElement extends CalculationElement {
-  final num number;
+  final BigInt number;
 
   const NumberElement(this.number);
 
   @override
   String toString() => number.toString();
+
+  @override
+  String toMathString() => number.toString();
 }
 
 class OperationElement extends CalculationElement {
@@ -47,15 +54,22 @@ class OperationElement extends CalculationElement {
 
   @override
   String toString() => operation.textRepresentation;
+
+  @override
+  String toMathString() => operation.mathRepresentation;
 }
 
 enum Operation {
-  add("+"),
-  subtract("-"),
-  multiply("×"),
-  divide("/");
+  add("+", "+"),
+  subtract("-", "-"),
+  multiply("×", "*"),
+  divide("/", "/");
 
   final String textRepresentation;
+  final String mathRepresentation;
 
-  const Operation(this.textRepresentation);
+  const Operation(
+    this.textRepresentation,
+    this.mathRepresentation,
+  );
 }

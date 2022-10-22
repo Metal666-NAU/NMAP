@@ -2,18 +2,20 @@ import 'state.dart';
 
 abstract class RootEvent {}
 
-class AddOperationEvent extends RootEvent {
+class AddOperation extends RootEvent {
   final Operation operation;
 
-  AddOperationEvent(this.operation);
+  AddOperation(this.operation);
 }
 
-class AddNumberEvent extends RootEvent {
-  final num number;
+class AddNumber extends RootEvent {
+  final BigInt number;
 
-  AddNumberEvent(this.number);
+  AddNumber(this.number);
 }
 
-class RemoveElementEvent extends RootEvent {}
+class RemoveElement extends RootEvent {}
 
-class ClearElementsEvent extends RootEvent {}
+class ClearElements extends RootEvent {}
+
+class Calculate extends RootEvent {}
