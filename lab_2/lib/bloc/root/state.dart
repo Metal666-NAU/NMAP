@@ -15,6 +15,14 @@ class RootState {
   String mathString() =>
       calculationElements.map((element) => element.toMathString()).join();
 
+  String calculationResultFormatted(String resultIfNull) =>
+      calculationResult == null
+          ? resultIfNull
+          : RegExp(r'^(\d+(?:\.\d*?[1-9](?=0|\b))?)\.?0*$')
+                  .firstMatch(calculationResult.toString())
+                  ?.group(1) ??
+              resultIfNull;
+
   RootState copyWith({
     double? Function()? calculationResult,
     List<CalculationElement> Function()? calculationElements,

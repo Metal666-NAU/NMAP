@@ -153,7 +153,7 @@ class Root extends HookWidget {
                       Expanded(
                         child: FittedBox(
                           child: Text(
-                            state.calculationResult?.toString() ?? " ",
+                            state.calculationResultFormatted(" "),
                             style: const TextStyle(fontSize: 48),
                           ),
                         ),
@@ -250,11 +250,18 @@ class Root extends HookWidget {
             _pageSwipeButton(pageController: pageController, down: false),
             Expanded(
               child: _panelCard(
-                child: Center(
-                  child: NeumorphicText(
-                    state.calculationResult == null
-                        ? "Немає відповіді"
-                        : state.calculationResult.toString(),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Center(
+                    child: FittedBox(
+                      child: NeumorphicText(
+                        state.calculationResultFormatted("Немає відповіді"),
+                        style: const NeumorphicStyle(depth: 6),
+                        textStyle: NeumorphicTextStyle(
+                          fontSize: MediaQuery.of(context).size.width / 3,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
