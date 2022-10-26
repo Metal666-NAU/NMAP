@@ -1,11 +1,14 @@
+import 'dart:ui';
+
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
-import 'package:lab_2/bloc/root/events.dart';
 import 'package:line_icons/line_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../bloc/root/bloc.dart';
+import '../bloc/root/events.dart';
 import '../bloc/root/state.dart';
 
 class Root extends HookWidget {
@@ -23,6 +26,7 @@ class Root extends HookWidget {
         children: [
           _calculatorPage(pageController),
           _resultsPage(pageController),
+          _otherPage(pageController),
         ],
       ),
     );
@@ -193,10 +197,10 @@ class Root extends HookWidget {
                       ),
                     ),
                     _panelCard(
+                      padding: 20,
                       child: GridView.count(
                         crossAxisCount: 3,
                         shrinkWrap: true,
-                        padding: const EdgeInsets.all(20),
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
                         physics: const NeverScrollableScrollPhysics(),
@@ -237,7 +241,10 @@ class Root extends HookWidget {
                   ],
                 ),
               ),
-              _pageSwipeButton(pageController: pageController, down: true),
+              _pageSwipeButton(
+                pageController: pageController,
+                down: true,
+              ),
             ],
           );
         },
@@ -247,36 +254,170 @@ class Root extends HookWidget {
       BlocBuilder<RootBloc, RootState>(
         builder: (context, state) => Column(
           children: [
-            _pageSwipeButton(pageController: pageController, down: false),
+            _pageSwipeButton(
+              pageController: pageController,
+              down: false,
+            ),
             Expanded(
               child: _panelCard(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Center(
-                    child: FittedBox(
-                      child: NeumorphicText(
-                        state.calculationResultFormatted("Немає відповіді"),
-                        style: const NeumorphicStyle(depth: 6),
-                        textStyle: NeumorphicTextStyle(
-                          fontSize: MediaQuery.of(context).size.width / 3,
-                        ),
+                padding: 16,
+                child: Center(
+                  child: FittedBox(
+                    child: Text(
+                      state.calculationResultFormatted("Немає відповіді"),
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width / 6,
                       ),
                     ),
                   ),
                 ),
               ),
             ),
+            _pageSwipeButton(
+              pageController: pageController,
+              down: true,
+            ),
           ],
         ),
       );
 
-  Widget _panelCard({bool raised = true, Widget? child}) => Neumorphic(
+  Widget _otherPage(final PageController pageController) {
+    Widget bigText(
+      String text,
+      BuildContext context,
+    ) =>
+        Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+              fontSize: 36, fontFeatures: [FontFeature.enable('smcp')]),
+        );
+
+    Widget link(
+      String name,
+      String url,
+      BuildContext context,
+    ) =>
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: 2,
+            horizontal: 0,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(fontSize: 22),
+                ),
+              ),
+              NeumorphicButton(
+                style: const NeumorphicStyle(depth: -4),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 4,
+                  horizontal: 16,
+                ),
+                onPressed: () async => await launchUrl(Uri.parse(url),
+                    mode: LaunchMode.externalApplication),
+                child: Icon(
+                  Icons.arrow_forward,
+                  color: NeumorphicTheme.defaultTextColor(context),
+                ),
+              ),
+            ],
+          ),
+        );
+
+    Widget separator() => const SizedBox(height: 6);
+
+    return Builder(
+        builder: (context) => Column(
+              children: [
+                _pageSwipeButton(
+                  pageController: pageController,
+                  down: false,
+                ),
+                Expanded(
+                  child: _panelCard(
+                    padding: 16,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          bigText(
+                            'project home',
+                            context,
+                          ),
+                          link(
+                            "lab_2",
+                            "https://github.com/Metal666-NAU/NMAP/tree/main/lab_2",
+                            context,
+                          ),
+                          separator(),
+                          bigText(
+                            'used libraries',
+                            context,
+                          ),
+                          link(
+                            "auto_size_text",
+                            "https://pub.dev/packages/auto_size_text",
+                            context,
+                          ),
+                          link(
+                            "flutter_bloc",
+                            "https://pub.dev/packages/flutter_bloc",
+                            context,
+                          ),
+                          link(
+                            "flutter_hooks",
+                            "https://pub.dev/packages/flutter_hooks",
+                            context,
+                          ),
+                          link(
+                            "flutter_neumorphic",
+                            "https://pub.dev/packages/flutter_neumorphic",
+                            context,
+                          ),
+                          link(
+                            "line_icons",
+                            "https://pub.dev/packages/line_icons",
+                            context,
+                          ),
+                          link(
+                            "math_expressions",
+                            "https://pub.dev/packages/math_expressions",
+                            context,
+                          ),
+                          link(
+                            "url_launcher",
+                            "https://pub.dev/packages/url_launcher",
+                            context,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ));
+  }
+
+  Widget _panelCard({
+    bool raised = true,
+    double padding = 0,
+    Widget? child,
+  }) =>
+      Neumorphic(
         margin: const EdgeInsets.all(10),
         style: NeumorphicStyle(
           shape: NeumorphicShape.convex,
           depth: raised ? null : -4,
         ),
-        child: child,
+        child: Padding(
+          padding: EdgeInsets.all(padding),
+          child: child,
+        ),
       );
 
   Widget _pageSwipeButton({

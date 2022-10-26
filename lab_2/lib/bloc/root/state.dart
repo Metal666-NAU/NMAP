@@ -18,10 +18,10 @@ class RootState {
   String calculationResultFormatted(String resultIfNull) =>
       calculationResult == null
           ? resultIfNull
-          : RegExp(r'^(\d+(?:\.\d*?[1-9](?=0|\b))?)\.?0*$')
+          : RegExp(r'^(-?\d+(?:\.\d*?[1-9](?=0|\b))?)\.?0*$')
                   .firstMatch(calculationResult.toString())
                   ?.group(1) ??
-              resultIfNull;
+              calculationResult.toString();
 
   RootState copyWith({
     double? Function()? calculationResult,
