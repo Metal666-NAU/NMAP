@@ -1,8 +1,35 @@
+import 'dart:io';
+
+import 'package:external_path/external_path.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'events.dart';
 import 'state.dart';
 
 class RootBloc extends Bloc<RootEvent, RootState> {
-  RootBloc() : super(const RootState());
+  RootBloc() : super(const Loading()) {
+    on<AppStarted>((event, emit) async {
+      Permission manageExternalStorage = Permission.manageExternalStorage;
+
+      if (await manageExternalStorage.isGranted) {
+        emit(const Main());
+      } else {
+        emit(const NeedsPermission());
+      }
+    });
+    on<AskForPermissions>((event, emit) async {
+      Permission manageExternalStorage = Permission.manageExternalStorage;
+
+      if (await manageExternalStorage.isDenied) {
+        await manageExternalStorage.request();
+      } else if (!await openAppSettings()) {
+        emit(const OpenSettingsError());
+      }
+
+      if (await manageExternalStorage.isGranted) {
+        emit(const Main());
+      }
+    });
+  }
 }

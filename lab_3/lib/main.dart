@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
+import 'package:lab_3/bloc/root/events.dart';
 
 import 'bloc/root/bloc.dart';
 import 'util/color_extensions.dart';
@@ -28,9 +29,10 @@ class MyApp extends StatelessWidget {
           shadowLightColorEmboss: Colors.black87,
         ),
         home: Scaffold(
-            body: BlocProvider(
-          create: (context) => RootBloc(),
-          child: const Root(),
-        )),
+          body: BlocProvider(
+            create: (context) => RootBloc()..add(AppStarted()),
+            child: const Root(),
+          ),
+        ),
       );
 }
