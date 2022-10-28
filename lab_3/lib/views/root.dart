@@ -5,5 +5,5 @@ class Root extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      const Center(child: Text("we are rollin'"));
+      const SafeArea(child: Center(child: Text("we are rollin'")));
 }

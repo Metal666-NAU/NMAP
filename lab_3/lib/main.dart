@@ -1,5 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 
+import 'bloc/root/bloc.dart';
+import 'util/color_extensions.dart';
 import 'views/root.dart';
 
 void main() {
@@ -10,11 +13,24 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => NeumorphicApp(
         title: 'Music Player (lab_3)',
-        theme: ThemeData(
-          primarySwatch: Colors.deepPurple,
+        theme: NeumorphicThemeData(
+          accentColor: Colors.deepPurple.shade400,
+          variantColor: Colors.red,
+          disabledColor: NeumorphicColors.background.darken(5),
         ),
-        home: const Scaffold(body: Root()),
+        darkTheme: NeumorphicThemeData.dark(
+          accentColor: Colors.deepPurple.shade400,
+          variantColor: Colors.red,
+          disabledColor: NeumorphicColors.darkBackground.lighten(15),
+          shadowLightColor: Colors.black87,
+          shadowLightColorEmboss: Colors.black87,
+        ),
+        home: Scaffold(
+            body: BlocProvider(
+          create: (context) => RootBloc(),
+          child: const Root(),
+        )),
       );
 }
