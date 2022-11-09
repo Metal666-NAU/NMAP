@@ -1,5 +1,3 @@
-import 'dart:io';
-
 abstract class RootState {
   const RootState();
 }

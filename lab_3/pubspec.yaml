@@ -9,11 +9,14 @@ environment:
   sdk: ">=2.18.2 <3.0.0"
 
 dependencies:
+  audioplayers: ^1.1.1
   external_path: ^1.0.3
   flutter:
     sdk: flutter
   flutter_bloc: ^8.1.1
+  flutter_breadcrumb: ^1.0.1
   flutter_neumorphic: ^3.2.0
+  path: ^1.8.2
   permission_handler: ^9.2.0
 
 dev_dependencies:

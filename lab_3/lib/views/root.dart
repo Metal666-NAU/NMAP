@@ -1,12 +1,12 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
-import 'package:lab_3/bloc/root/player/bloc.dart';
-import 'package:lab_3/bloc/root/player/events.dart';
-import 'package:lab_3/views/root/loading_indicator.dart';
 
 import '../bloc/root/bloc.dart';
 import '../bloc/root/events.dart';
+import '../bloc/root/player/bloc.dart';
+import '../bloc/root/player/events.dart';
 import '../bloc/root/state.dart';
+import 'root/loading_indicator.dart';
 import 'root/player.dart';
 
 class Root extends StatelessWidget {
@@ -34,7 +34,7 @@ class Root extends StatelessWidget {
               return needsPremissionsWarningPage;
             case Main:
               return BlocProvider(
-                create: (context) => PlayerBloc()..add(PlayerLoaded()),
+                create: (context) => PlayerBloc()..add(const PlayerLoaded()),
                 child: const Player(),
               );
             case OpenSettingsError:
