@@ -14,6 +14,6 @@ class OpenSettingsError extends RootState {
   const OpenSettingsError();
 }
 
-class Main extends RootState {
-  const Main();
+class Home extends RootState {
+  const Home();
 }

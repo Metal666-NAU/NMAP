@@ -5,18 +5,17 @@ import 'package:flutter_breadcrumb/flutter_breadcrumb.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 import 'package:path/path.dart';
 
-import '../../bloc/root/player/bloc.dart';
-import '../../bloc/root/player/events.dart';
-import '../../bloc/root/player/state.dart';
+import '../../bloc/root/home/bloc.dart';
+import '../../bloc/root/home/events.dart';
+import '../../bloc/root/home/state.dart';
 import 'loading_indicator.dart';
 
-class Player extends StatelessWidget {
-  const Player({super.key});
+class Home extends StatelessWidget {
+  const Home({super.key});
 
   @override
   Widget build(BuildContext context) => _mainPanel(
         externalStoragePicker: (
-          context,
           availableStorages,
           loadingStorage,
         ) =>
@@ -27,7 +26,6 @@ class Player extends StatelessWidget {
           externalStorageButton: _externalStorageButton,
         ),
         filePicker: (
-          context,
           currentStorage,
           currentDirectory,
           availableItems,
@@ -47,41 +45,46 @@ class Player extends StatelessWidget {
             fileSystemItem: _fileSystemItem,
           ),
         ),
+        player: _player(),
       );
 
   Widget _mainPanel({
     required Widget Function(
-      BuildContext context,
       List<Storage> availableStorages,
       Storage? loadingStorage,
     )
         externalStoragePicker,
     required Widget Function(
-      BuildContext context,
       Storage currentStorage,
       Directory currentDirectory,
       List<FileSystemEntity> availableItems,
     )
         filePicker,
+    required Widget player,
   }) =>
-      BlocBuilder<PlayerBloc, PlayerState>(
-        buildWhen: (previous, current) =>
-            current.currentStorageWasSetOrCleared(previous) ||
-            previous.availableStorages != current.availableStorages ||
-            previous.loadingStorage != current.loadingStorage ||
-            previous.currentDirectory != current.currentDirectory,
-        builder: (context, state) => state.currentStorage == null
-            ? externalStoragePicker(
-                context,
-                state.availableStorages,
-                state.loadingStorage,
-              )
-            : filePicker(
-                context,
-                state.currentStorage!,
-                state.currentDirectory!,
-                state.entitiesAtCurrentPath ?? [],
-              ),
+      Column(
+        children: [
+          Expanded(
+            child: BlocBuilder<HomeBloc, HomeState>(
+              buildWhen: (previous, current) =>
+                  current.currentStorageWasSetOrCleared(previous) ||
+                  previous.availableStorages != current.availableStorages ||
+                  previous.loadingStorage != current.loadingStorage ||
+                  previous.currentDirectory != current.currentDirectory,
+              builder: (context, state) => state.currentStorage == null
+                  ? externalStoragePicker(
+                      state.availableStorages,
+                      state.loadingStorage,
+                    )
+                  : filePicker(
+                      state.currentStorage!,
+                      state.currentDirectory!,
+                      state.entitiesAtCurrentPath ?? [],
+                    ),
+            ),
+          ),
+          player,
+        ],
       );
 
   Widget _externalStoragePicker({
@@ -114,8 +117,7 @@ class Player extends StatelessWidget {
       NeumorphicButton(
         onPressed: loadingStorage != null
             ? null
-            : () =>
-                context.read<PlayerBloc>().add(PickExternalStorage(storage)),
+            : () => context.read<HomeBloc>().add(PickExternalStorage(storage)),
         child: storage == loadingStorage
             ? const LoadingIndicator()
             : Text(storage.name),
@@ -182,7 +184,7 @@ class Player extends StatelessWidget {
     String? contentOverride,
   ) =>
       BreadCrumbItem(
-        onTap: () => context.read<PlayerBloc>().add(PickDirectory(directory)),
+        onTap: () => context.read<HomeBloc>().add(PickDirectory(directory)),
         content: Text(contentOverride ?? split(directory.path).last),
       );
 
@@ -236,7 +238,7 @@ class Player extends StatelessWidget {
           Icons.undo_sharp,
           color: NeumorphicTheme.defaultTextColor(context),
         ),
-        onTap: () => context.read<PlayerBloc>().add(PickDirectory(directory)),
+        onTap: () => context.read<HomeBloc>().add(PickDirectory(directory)),
       );
 
   Widget _fileSystemItem(
@@ -255,11 +257,79 @@ class Player extends StatelessWidget {
         title: Text(basename(entity.path)),
         onTap: () {
           if (entity is Directory) {
-            context.read<PlayerBloc>().add(PickDirectory(entity));
+            context.read<HomeBloc>().add(PickDirectory(entity));
           }
           if (entity is File) {
-            //context.read<PlayerBloc>().add(PickDirectory(entity));
+            context.read<HomeBloc>().add(PlayFile(entity));
           }
         },
+      );
+
+  Widget _player() => BlocBuilder<HomeBloc, HomeState>(
+        buildWhen: (previous, current) =>
+            previous.currentAudioFile != current.currentAudioFile,
+        builder: (context, state) => state.currentAudioFile == null
+            ? const SizedBox()
+            : Column(
+                children: [
+                  if (state.currentAudioFile?.progress != null)
+                    NeumorphicSlider(
+                      max: 1,
+                      value: state.currentAudioFile!.progress!,
+                      onChangeStart: (percent) =>
+                          context.read<HomeBloc>().add(const StartSeeking()),
+                      onChanged: (percent) =>
+                          context.read<HomeBloc>().add(Seeking(percent)),
+                      onChangeEnd: (percent) =>
+                          context.read<HomeBloc>().add(FinishSeeking(percent)),
+                    )
+                  else
+                    const NeumorphicProgressIndeterminate(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text(
+                              state.currentAudioFile?.metadata?.title != null
+                                  ? state.currentAudioFile!.metadata!.title!
+                                  : state.currentAudioFile?.metadata == null
+                                      ? "Loading title..."
+                                      : state.currentAudioFile!.path,
+                            ),
+                            Text(
+                              state.currentAudioFile?.metadata?.artist != null
+                                  ? state.currentAudioFile!.metadata!.artist!
+                                  : state.currentAudioFile?.metadata == null
+                                      ? "Loading artist name..."
+                                      : "",
+                            ),
+                            Text(
+                              state.currentAudioFile?.metadata?.album != null
+                                  ? state.currentAudioFile!.metadata!.album!
+                                  : state.currentAudioFile?.metadata == null
+                                      ? "Loading album name..."
+                                      : "",
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: state.currentAudioFile?.progress == null
+                            ? null
+                            : () => context
+                                .read<HomeBloc>()
+                                .add(const TogglePlayback()),
+                        icon: Icon(
+                          state.currentAudioFile!.isPlaying
+                              ? Icons.pause
+                              : Icons.play_arrow,
+                          color: NeumorphicTheme.defaultTextColor(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
       );
 }

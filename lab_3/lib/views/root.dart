@@ -3,11 +3,11 @@ import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 
 import '../bloc/root/bloc.dart';
 import '../bloc/root/events.dart';
-import '../bloc/root/player/bloc.dart';
-import '../bloc/root/player/events.dart';
+import '../bloc/root/home/bloc.dart';
+import '../bloc/root/home/events.dart';
 import '../bloc/root/state.dart';
 import 'root/loading_indicator.dart';
-import 'root/player.dart';
+import 'root/home.dart' as home;
 
 class Root extends StatelessWidget {
   const Root({super.key});
@@ -32,10 +32,10 @@ class Root extends StatelessWidget {
           switch (state.runtimeType) {
             case NeedsPermission:
               return needsPremissionsWarningPage;
-            case Main:
+            case Home:
               return BlocProvider(
-                create: (context) => PlayerBloc()..add(const PlayerLoaded()),
-                child: const Player(),
+                create: (context) => HomeBloc()..add(const HomeLoaded()),
+                child: const home.Home(),
               );
             case OpenSettingsError:
               return openSettingsErrorPage;

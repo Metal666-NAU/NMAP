@@ -1,16 +1,39 @@
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:external_path/external_path.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:metadata_god/metadata_god.dart';
 import 'package:path/path.dart';
 
 import 'events.dart';
 import 'state.dart';
 
-class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
-  PlayerBloc() : super(const PlayerState()) {
-    on<PlayerLoaded>((event, emit) async {
+class HomeBloc extends Bloc<HomeEvent, HomeState> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
+  HomeBloc() : super(const HomeState()) {
+    _audioPlayer.onPositionChanged.listen((event) async {
+      if (state.currentAudioFile?.isSeeking == true) {
+        return;
+      }
+
+      if (state.currentAudioFile?.duration == null) {
+        add(const UpdatePlaybackProgress());
+
+        return;
+      }
+
+      add(UpdatePlaybackProgress(event.inMilliseconds /
+          state.currentAudioFile!.duration!.inMilliseconds));
+    });
+
+    _audioPlayer.onPlayerComplete.listen(
+      (event) => add(const FinishedPlayback()),
+    );
+
+    on<HomeLoaded>((event, emit) async {
       List<Directory> availableStorages =
           (await ExternalPath.getExternalStorageDirectories())
               .map((path) => Directory(path))
@@ -88,6 +111,82 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
                 state.allAudioFilesInCurrentStorage,
               ),
       ));
+    });
+    on<PlayFile>((event, emit) async {
+      emit(state.copyWith(
+        currentAudioFile: () => AudioFile(path: event.file.path),
+      ));
+
+      AudioFileMetadata? audioFileMetadata;
+
+      if ([
+        ".mp3",
+        ".m4a",
+        ".mp4",
+        ".flac",
+      ].contains(extension(event.file.path))) {
+        final Metadata? metadata =
+            await MetadataGod.getMetadata(event.file.path);
+
+        if (metadata != null) {
+          audioFileMetadata = AudioFileMetadata(
+            title: metadata.title,
+            artist: metadata.artist,
+            album: metadata.album,
+            albumArt: metadata.picture,
+          );
+        }
+      }
+
+      emit(state.copyWith(
+        currentAudioFile: () => state.currentAudioFile?.copyWith(
+            metadata: () => audioFileMetadata ?? const AudioFileMetadata()),
+      ));
+
+      await _audioPlayer.play(DeviceFileSource(event.file.path));
+
+      Duration? duration = await _audioPlayer.getDuration();
+
+      emit(state.copyWith(
+        currentAudioFile: () => state.currentAudioFile?.copyWith(
+          duration: () => duration,
+          isPlaying: () => true,
+        ),
+      ));
+    });
+    on<UpdatePlaybackProgress>((event, emit) => emit(state.copyWith(
+          currentAudioFile: () =>
+              state.currentAudioFile?.copyWith(progress: () => event.progress),
+        )));
+    on<StartSeeking>((event, emit) => emit(state.copyWith(
+        currentAudioFile: () =>
+            state.currentAudioFile?.copyWith(isSeeking: () => true))));
+    on<Seeking>((event, emit) => emit(state.copyWith(
+        currentAudioFile: () =>
+            state.currentAudioFile?.copyWith(progress: () => event.position))));
+    on<FinishSeeking>((event, emit) {
+      _audioPlayer.seek(
+          (state.currentAudioFile?.duration ?? Duration.zero) * event.position);
+
+      emit(state.copyWith(
+          currentAudioFile: () =>
+              state.currentAudioFile?.copyWith(isSeeking: () => false)));
+    });
+    on<TogglePlayback>(
+      (event, emit) async {
+        await (_audioPlayer.state == PlayerState.paused
+            ? _audioPlayer.resume()
+            : _audioPlayer.pause());
+
+        emit(state.copyWith(
+            currentAudioFile: () => state.currentAudioFile?.copyWith(
+                isPlaying: (() => _audioPlayer.state == PlayerState.playing))));
+      },
+    );
+    on<FinishedPlayback>((event, emit) async {
+      await _audioPlayer.release();
+
+      emit(state.copyWith(currentAudioFile: () => null));
     });
   }
 
