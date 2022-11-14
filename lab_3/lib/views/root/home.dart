@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_breadcrumb/flutter_breadcrumb.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
+import 'package:metadata_god/metadata_god.dart' as metadata_god;
 import 'package:path/path.dart';
 
 import '../../bloc/root/home/bloc.dart';
 import '../../bloc/root/home/events.dart';
 import '../../bloc/root/home/state.dart';
+import '../../util/color_extensions.dart';
 import 'loading_indicator.dart';
 
 class Home extends StatelessWidget {
@@ -45,7 +47,27 @@ class Home extends StatelessWidget {
             fileSystemItem: _fileSystemItem,
           ),
         ),
-        player: _player(),
+        player: (maxHeight) => _player(
+          maxHeight: maxHeight,
+          progressBar: (context, progress) => _progressBar(
+            context,
+            progress,
+          ),
+          albumArtImage: (context, albumArt) => _albumArtImage(
+            context,
+            albumArt,
+          ),
+          playButton: (
+            context,
+            isPlaying,
+            isBig,
+          ) =>
+              _playButton(
+            context,
+            isPlaying,
+            isBig,
+          ),
+        ),
       );
 
   Widget _mainPanel({
@@ -60,31 +82,33 @@ class Home extends StatelessWidget {
       List<FileSystemEntity> availableItems,
     )
         filePicker,
-    required Widget player,
+    required Widget Function(double maxHeight) player,
   }) =>
-      Column(
-        children: [
-          Expanded(
-            child: BlocBuilder<HomeBloc, HomeState>(
-              buildWhen: (previous, current) =>
-                  current.currentStorageWasSetOrCleared(previous) ||
-                  previous.availableStorages != current.availableStorages ||
-                  previous.loadingStorage != current.loadingStorage ||
-                  previous.currentDirectory != current.currentDirectory,
-              builder: (context, state) => state.currentStorage == null
-                  ? externalStoragePicker(
-                      state.availableStorages,
-                      state.loadingStorage,
-                    )
-                  : filePicker(
-                      state.currentStorage!,
-                      state.currentDirectory!,
-                      state.entitiesAtCurrentPath ?? [],
-                    ),
+      LayoutBuilder(
+        builder: (context, constraints) => Column(
+          children: [
+            Expanded(
+              child: BlocBuilder<HomeBloc, HomeState>(
+                buildWhen: (previous, current) =>
+                    current.currentStorageWasSetOrCleared(previous) ||
+                    previous.availableStorages != current.availableStorages ||
+                    previous.loadingStorage != current.loadingStorage ||
+                    previous.currentDirectory != current.currentDirectory,
+                builder: (context, state) => state.currentStorage == null
+                    ? externalStoragePicker(
+                        state.availableStorages,
+                        state.loadingStorage,
+                      )
+                    : filePicker(
+                        state.currentStorage!,
+                        state.currentDirectory!,
+                        state.entitiesAtCurrentPath ?? [],
+                      ),
+              ),
             ),
-          ),
-          player,
-        ],
+            player(constraints.maxHeight),
+          ],
+        ),
       );
 
   Widget _externalStoragePicker({
@@ -265,71 +289,272 @@ class Home extends StatelessWidget {
         },
       );
 
-  Widget _player() => BlocBuilder<HomeBloc, HomeState>(
+  Widget _player({
+    required double maxHeight,
+    required Widget Function(
+      BuildContext context,
+      double? progress,
+    )
+        progressBar,
+    required Widget Function(
+      BuildContext context,
+      metadata_god.Image? albumArt,
+    )
+        albumArtImage,
+    required Widget Function(
+      BuildContext context,
+      bool? isPlaying,
+      bool isBig,
+    )
+        playButton,
+  }) =>
+      BlocBuilder<HomeBloc, HomeState>(
         buildWhen: (previous, current) =>
-            previous.currentAudioFile != current.currentAudioFile,
+            previous.currentAudioFile != current.currentAudioFile ||
+            previous.isPlayerExpanded != current.isPlayerExpanded,
         builder: (context, state) => state.currentAudioFile == null
             ? const SizedBox()
-            : Column(
-                children: [
-                  if (state.currentAudioFile?.progress != null)
-                    NeumorphicSlider(
-                      max: 1,
-                      value: state.currentAudioFile!.progress!,
-                      onChangeStart: (percent) =>
-                          context.read<HomeBloc>().add(const StartSeeking()),
-                      onChanged: (percent) =>
-                          context.read<HomeBloc>().add(Seeking(percent)),
-                      onChangeEnd: (percent) =>
-                          context.read<HomeBloc>().add(FinishSeeking(percent)),
-                    )
-                  else
-                    const NeumorphicProgressIndeterminate(),
-                  Row(
+            : AnimatedContainer(
+                curve: Curves.easeInOutQuint,
+                height: state.isPlayerExpanded ? maxHeight * 0.75 : 80,
+                duration: const Duration(milliseconds: 400),
+                child: NeumorphicButton(
+                  padding: EdgeInsets.zero,
+                  style: const NeumorphicStyle(depth: -6),
+                  onPressed: () => context
+                      .read<HomeBloc>()
+                      .add(const ToggleExpandedPlayer()),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: Column(
+                      if (state.isPlayerExpanded)
+                        Expanded(
+                          child: Neumorphic(
+                            style: const NeumorphicStyle(depth: -6),
+                            child: Padding(
+                              padding: const EdgeInsets.all(70),
+                              child: FittedBox(
+                                fit: BoxFit.fitWidth,
+                                child: albumArtImage(
+                                  context,
+                                  state.currentAudioFile?.metadata?.albumArt,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      progressBar(
+                        context,
+                        state.currentAudioFile?.progress,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              state.currentAudioFile?.metadata?.title != null
-                                  ? state.currentAudioFile!.metadata!.title!
-                                  : state.currentAudioFile?.metadata == null
-                                      ? "Loading title..."
-                                      : state.currentAudioFile!.path,
+                            if (!state.isPlayerExpanded)
+                              albumArtImage(
+                                context,
+                                state.currentAudioFile?.metadata?.albumArt,
+                              ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: state.isPlayerExpanded
+                                    ? CrossAxisAlignment.center
+                                    : CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    state.currentAudioFile?.metadata?.title !=
+                                            null
+                                        ? state
+                                            .currentAudioFile!.metadata!.title!
+                                        : state.currentAudioFile?.metadata ==
+                                                null
+                                            ? "Loading title..."
+                                            : state.currentAudioFile!.path,
+                                    style: TextStyle(
+                                        fontSize:
+                                            state.isPlayerExpanded ? 30 : 20),
+                                  ),
+                                  if (state
+                                          .currentAudioFile?.metadata?.artist !=
+                                      null)
+                                    Row(
+                                      mainAxisAlignment: state.isPlayerExpanded
+                                          ? MainAxisAlignment.center
+                                          : MainAxisAlignment.start,
+                                      children: [
+                                        if (state.isPlayerExpanded)
+                                          Text(
+                                            "by ",
+                                            style: TextStyle(
+                                              fontSize: 22,
+                                              color: NeumorphicTheme
+                                                      .defaultTextColor(context)
+                                                  .darken(60),
+                                            ),
+                                          ),
+                                        Text(
+                                          state.currentAudioFile!.metadata!
+                                              .artist!,
+                                          style: TextStyle(
+                                            fontSize: state.isPlayerExpanded
+                                                ? 22
+                                                : 16,
+                                            color: NeumorphicTheme
+                                                    .defaultTextColor(context)
+                                                .darken(20),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  if (state.isPlayerExpanded &&
+                                      state.currentAudioFile?.metadata?.album !=
+                                          null)
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          "from ",
+                                          style: TextStyle(
+                                            fontSize: 22,
+                                            color: NeumorphicTheme
+                                                    .defaultTextColor(context)
+                                                .darken(60),
+                                          ),
+                                        ),
+                                        Text(
+                                          state.currentAudioFile!.metadata!
+                                              .album!,
+                                          style: TextStyle(
+                                            fontSize: state.isPlayerExpanded
+                                                ? 22
+                                                : 16,
+                                            color: NeumorphicTheme
+                                                    .defaultTextColor(context)
+                                                .darken(20),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                ],
+                              ),
                             ),
-                            Text(
-                              state.currentAudioFile?.metadata?.artist != null
-                                  ? state.currentAudioFile!.metadata!.artist!
-                                  : state.currentAudioFile?.metadata == null
-                                      ? "Loading artist name..."
-                                      : "",
-                            ),
-                            Text(
-                              state.currentAudioFile?.metadata?.album != null
-                                  ? state.currentAudioFile!.metadata!.album!
-                                  : state.currentAudioFile?.metadata == null
-                                      ? "Loading album name..."
-                                      : "",
-                            ),
+                            if (!state.isPlayerExpanded)
+                              playButton(
+                                context,
+                                state.currentAudioFile?.progress == null
+                                    ? null
+                                    : state.currentAudioFile!.isPlaying,
+                                false,
+                              ),
                           ],
                         ),
                       ),
-                      IconButton(
-                        onPressed: state.currentAudioFile?.progress == null
-                            ? null
-                            : () => context
-                                .read<HomeBloc>()
-                                .add(const TogglePlayback()),
-                        icon: Icon(
-                          state.currentAudioFile!.isPlaying
-                              ? Icons.pause
-                              : Icons.play_arrow,
-                          color: NeumorphicTheme.defaultTextColor(context),
+                      if (state.isPlayerExpanded)
+                        Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: playButton(
+                              context,
+                              state.currentAudioFile?.progress == null
+                                  ? null
+                                  : state.currentAudioFile!.isPlaying,
+                              true,
+                            ),
+                          ),
                         ),
-                      ),
                     ],
                   ),
-                ],
+                ),
               ),
       );
+
+  Widget _progressBar(
+    BuildContext context,
+    double? progress,
+  ) =>
+      progress != null
+          ? NeumorphicSlider(
+              max: 1,
+              value: progress,
+              onChangeStart: (percent) =>
+                  context.read<HomeBloc>().add(const StartSeeking()),
+              onChanged: (percent) =>
+                  context.read<HomeBloc>().add(Seeking(percent)),
+              onChangeEnd: (percent) =>
+                  context.read<HomeBloc>().add(FinishSeeking(percent)),
+              style: const SliderStyle(
+                depth: -6,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.zero,
+                  bottom: Radius.circular(10),
+                ),
+              ),
+              thumb: Neumorphic(
+                style: NeumorphicStyle(
+                  depth: 4,
+                  shape: NeumorphicShape.concave,
+                  boxShape: NeumorphicBoxShape.roundRect(
+                    const BorderRadius.vertical(
+                      top: Radius.zero,
+                      bottom: Radius.circular(10),
+                    ),
+                  ),
+                  color: NeumorphicTheme.accentColor(context),
+                ),
+                child: const SizedBox(
+                  height: 26,
+                  width: 22,
+                ),
+              ),
+            )
+          : const NeumorphicProgressIndeterminate();
+
+  Widget _albumArtImage(
+    BuildContext context,
+    metadata_god.Image? albumArt,
+  ) =>
+      albumArt != null
+          ? Image.memory(albumArt.data)
+          : ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 40),
+              child: FittedBox(
+                fit: BoxFit.fitWidth,
+                child: NeumorphicIcon(
+                  Icons.album,
+                  style: const NeumorphicStyle(
+                    shape: NeumorphicShape.convex,
+                  ),
+                ),
+              ),
+            );
+
+  Widget _playButton(
+    BuildContext context,
+    bool? isPlaying,
+    bool isBig,
+  ) {
+    void onPressed() => isPlaying == null
+        ? null
+        : context.read<HomeBloc>().add(const TogglePlayback());
+
+    Icon icon([double? size]) => Icon(
+          isPlaying == true ? Icons.pause : Icons.play_arrow,
+          size: size,
+          color: NeumorphicTheme.defaultTextColor(context),
+        );
+
+    return isBig
+        ? NeumorphicButton(
+            onPressed: onPressed,
+            child: icon(32),
+          )
+        : IconButton(
+            iconSize: 26,
+            onPressed: onPressed,
+            icon: icon(),
+          );
+  }
 }

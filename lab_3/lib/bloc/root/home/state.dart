@@ -10,6 +10,7 @@ class HomeState {
   final List<File> allAudioFilesInCurrentStorage;
   final List<FileSystemEntity>? entitiesAtCurrentPath;
   final AudioFile? currentAudioFile;
+  final bool isPlayerExpanded;
 
   const HomeState({
     this.availableStorages = const [],
@@ -19,6 +20,7 @@ class HomeState {
     this.allAudioFilesInCurrentStorage = const [],
     this.entitiesAtCurrentPath = const [],
     this.currentAudioFile,
+    this.isPlayerExpanded = false,
   });
 
   bool currentStorageWasSetOrCleared(HomeState previousState) =>
@@ -33,6 +35,7 @@ class HomeState {
     List<File> Function()? allAudioFilesInCurrentStorage,
     List<FileSystemEntity>? Function()? entitiesAtCurrentPath,
     AudioFile? Function()? currentAudioFile,
+    bool Function()? isPlayerExpanded,
   }) =>
       HomeState(
         availableStorages: availableStorages == null
@@ -56,6 +59,9 @@ class HomeState {
         currentAudioFile: currentAudioFile == null
             ? this.currentAudioFile
             : currentAudioFile.call(),
+        isPlayerExpanded: isPlayerExpanded == null
+            ? this.isPlayerExpanded
+            : isPlayerExpanded.call(),
       );
 }
 

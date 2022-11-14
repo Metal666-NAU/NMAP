@@ -186,8 +186,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<FinishedPlayback>((event, emit) async {
       await _audioPlayer.release();
 
-      emit(state.copyWith(currentAudioFile: () => null));
+      emit(state.copyWith(
+        currentAudioFile: () => null,
+        isPlayerExpanded: () => false,
+      ));
     });
+    on<ToggleExpandedPlayer>((event, emit) =>
+        emit(state.copyWith(isPlayerExpanded: () => !state.isPlayerExpanded)));
   }
 
   List<FileSystemEntity> getFilesSystemEntitiesAtPath(

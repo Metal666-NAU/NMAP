@@ -57,3 +57,7 @@ class TogglePlayback extends HomeEvent {
 class FinishedPlayback extends HomeEvent {
   const FinishedPlayback();
 }
+
+class ToggleExpandedPlayer extends HomeEvent {
+  const ToggleExpandedPlayer();
+}
