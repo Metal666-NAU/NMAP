@@ -79,7 +79,7 @@ class Home extends StatelessWidget {
     required Widget Function(
       Storage currentStorage,
       Directory currentDirectory,
-      List<FileSystemEntity> availableItems,
+      List<AudioFileSystemEntity> availableItems,
     )
         filePicker,
     required Widget Function(double maxHeight) player,
@@ -122,15 +122,29 @@ class Home extends StatelessWidget {
     )
         externalStorageButton,
   }) =>
-      GridView.count(
-        crossAxisCount: 2,
-        children: availableStorages
-            .map((storage) => externalStorageButton(
-                  context,
-                  storage,
-                  loadingStorage,
-                ))
-            .toList(),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              "Show files in...",
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          ),
+          Expanded(
+            child: GridView.count(
+              crossAxisCount: 2,
+              children: availableStorages
+                  .map((storage) => externalStorageButton(
+                        context,
+                        storage,
+                        loadingStorage,
+                      ))
+                  .toList(),
+            ),
+          ),
+        ],
       );
 
   Widget _externalStorageButton(
@@ -144,7 +158,13 @@ class Home extends StatelessWidget {
             : () => context.read<HomeBloc>().add(PickExternalStorage(storage)),
         child: storage == loadingStorage
             ? const LoadingIndicator()
-            : Text(storage.name),
+            : Center(
+                child: Text(
+                  storage.name,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headline4,
+                ),
+              ),
       );
 
   Widget _filePicker({
@@ -153,7 +173,10 @@ class Home extends StatelessWidget {
   }) =>
       Column(
         children: [
-          breadCrumbRow,
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: breadCrumbRow,
+          ),
           Expanded(
             child: fileList,
           ),
@@ -166,17 +189,21 @@ class Home extends StatelessWidget {
     required Directory currentDirectory,
     required BreadCrumbItem Function(
       BuildContext context,
-      Directory directory,
-      String? contentOverride,
-    )
+      Directory directory, [
+      Widget? contentOverride,
+      bool last,
+    ])
         pathBreadCrumb,
   }) =>
       BreadCrumb(
         items: [
           pathBreadCrumb(
             context,
-            currentStorage.directory,
-            currentStorage.name,
+            currentStorage.directory.parent,
+            Icon(
+              Icons.home_outlined,
+              color: NeumorphicTheme.defaultTextColor(context),
+            ),
           ),
           ...() {
             Directory directory = currentDirectory;
@@ -188,13 +215,26 @@ class Home extends StatelessWidget {
               directory = directory.parent;
             }
 
-            return directories;
-          }()
-              .map((directory) => pathBreadCrumb(
-                    context,
-                    directory,
-                    null,
-                  )),
+            List<BreadCrumbItem> breadCrumbs = directories
+                .map((directory) => pathBreadCrumb(
+                      context,
+                      directory,
+                      null,
+                      directories.last == directory,
+                    ))
+                .toList();
+
+            breadCrumbs.insert(
+                0,
+                pathBreadCrumb(
+                  context,
+                  currentStorage.directory,
+                  Text(currentStorage.name),
+                  directories.isEmpty,
+                ));
+
+            return breadCrumbs;
+          }(),
         ],
         divider: Icon(
           Icons.chevron_right,
@@ -204,18 +244,28 @@ class Home extends StatelessWidget {
 
   BreadCrumbItem _pathBreadCrumb(
     BuildContext context,
-    Directory directory,
-    String? contentOverride,
-  ) =>
+    Directory directory, [
+    Widget? contentOverride,
+    bool last = false,
+  ]) =>
       BreadCrumbItem(
-        onTap: () => context.read<HomeBloc>().add(PickDirectory(directory)),
-        content: Text(contentOverride ?? split(directory.path).last),
+        content: NeumorphicButton(
+          padding: const EdgeInsets.all(5),
+          style: NeumorphicStyle(
+            depth: 4,
+            shape: last ? NeumorphicShape.flat : NeumorphicShape.concave,
+          ),
+          onPressed: last
+              ? null
+              : () => context.read<HomeBloc>().add(PickDirectory(directory)),
+          child: contentOverride ?? Text(split(directory.path).last),
+        ),
       );
 
   Widget _fileList({
     required BuildContext context,
     required Directory currentDirectory,
-    required List<FileSystemEntity> availableItems,
+    required List<AudioFileSystemEntity> availableItems,
     required Widget Function(
       BuildContext context,
       Directory directory,
@@ -223,30 +273,32 @@ class Home extends StatelessWidget {
         directoryUpItem,
     required Widget Function(
       BuildContext context,
-      FileSystemEntity entity,
+      AudioFileSystemEntity entity,
     )
         fileSystemItem,
   }) =>
       ListView(
         children: [
-          directoryUpItem(context, currentDirectory.parent),
+          //directoryUpItem(context, currentDirectory.parent),
           ...(availableItems
-                  .whereType<Directory>()
-                  .cast<FileSystemEntity>()
+                  .whereType<AudioDirectory>()
+                  .cast<AudioFileSystemEntity>()
                   .toList()
                 ..sort(
-                  (item1, item2) => basename(item1.path)
+                  (item1, item2) => basename(item1.fileSystemEntity.path)
                       .toLowerCase()
-                      .compareTo(basename(item2.path).toLowerCase()),
+                      .compareTo(
+                          basename(item2.fileSystemEntity.path).toLowerCase()),
                 ))
               .followedBy(availableItems
-                  .whereType<File>()
-                  .cast<FileSystemEntity>()
+                  .whereType<AudioFile>()
+                  .cast<AudioFileSystemEntity>()
                   .toList()
                 ..sort(
-                  (item1, item2) => basename(item1.path)
+                  (item1, item2) => basename(item1.fileSystemEntity.path)
                       .toLowerCase()
-                      .compareTo(basename(item2.path).toLowerCase()),
+                      .compareTo(
+                          basename(item2.fileSystemEntity.path).toLowerCase()),
                 ))
               .map((item) => fileSystemItem(context, item))
               .toList(),
@@ -257,34 +309,45 @@ class Home extends StatelessWidget {
     BuildContext context,
     Directory directory,
   ) =>
-      ListTile(
-        title: Icon(
-          Icons.undo_sharp,
-          color: NeumorphicTheme.defaultTextColor(context),
+      Neumorphic(
+        style: NeumorphicStyle(depth: -4),
+        child: ListTile(
+          title: Icon(
+            Icons.undo_sharp,
+            color: NeumorphicTheme.defaultTextColor(context),
+          ),
+          onTap: () => context.read<HomeBloc>().add(PickDirectory(directory)),
         ),
-        onTap: () => context.read<HomeBloc>().add(PickDirectory(directory)),
       );
 
   Widget _fileSystemItem(
     BuildContext context,
-    FileSystemEntity entity,
+    AudioFileSystemEntity entity,
   ) =>
       ListTile(
+        visualDensity: VisualDensity.comfortable,
         leading: Icon(
-          entity is Directory
+          entity is AudioDirectory
               ? Icons.folder
-              : entity is File
+              : entity is AudioFile
                   ? Icons.audiotrack
                   : Icons.question_mark,
           color: NeumorphicTheme.defaultTextColor(context),
         ),
-        title: Text(basename(entity.path)),
+        title: Text(basename(entity.fileSystemEntity.path)),
+        subtitle: Text(entity is AudioDirectory
+            ? "Files: ${entity.fileCount}"
+            : entity is AudioFile
+                ? "Size: ${entity.size}"
+                : ""),
         onTap: () {
-          if (entity is Directory) {
-            context.read<HomeBloc>().add(PickDirectory(entity));
+          if (entity is AudioDirectory) {
+            context
+                .read<HomeBloc>()
+                .add(PickDirectory(entity.fileSystemEntity));
           }
-          if (entity is File) {
-            context.read<HomeBloc>().add(PlayFile(entity));
+          if (entity is AudioFile) {
+            context.read<HomeBloc>().add(PlayFile(entity.fileSystemEntity));
           }
         },
       );

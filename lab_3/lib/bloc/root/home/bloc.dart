@@ -85,36 +85,41 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           .cast<File>()
           .toList();
 
+      List<AudioFileSystemEntity> entities =
+          await getAudioFilesSystemEntitiesAtPath(
+        event.storage.directory.path,
+        allAudioFilesInCurrentStorage,
+      );
+
       emit(state.copyWith(
         currentStorage: () => event.storage,
         loadingStorage: () => null,
         currentDirectory: () => event.storage.directory,
         allAudioFilesInCurrentStorage: () => allAudioFilesInCurrentStorage,
-        entitiesAtCurrentPath: () => getFilesSystemEntitiesAtPath(
-          event.storage.directory.path,
-          allAudioFilesInCurrentStorage,
-        ),
+        entitiesAtCurrentPath: () => entities,
       ));
     });
-    on<PickDirectory>((event, emit) {
+    on<PickDirectory>((event, emit) async {
       bool clearCurrentDirectory = state.currentStorage == null ||
           split(event.directory.path).length <
               split(state.currentStorage!.directory.path).length;
 
+      List<AudioFileSystemEntity>? entities = clearCurrentDirectory
+          ? null
+          : await getAudioFilesSystemEntitiesAtPath(
+              event.directory.path,
+              state.allAudioFilesInCurrentStorage,
+            );
+
       emit(state.copyWith(
         currentStorage: clearCurrentDirectory ? () => null : null,
         currentDirectory: () => clearCurrentDirectory ? null : event.directory,
-        entitiesAtCurrentPath: () => clearCurrentDirectory
-            ? null
-            : getFilesSystemEntitiesAtPath(
-                event.directory.path,
-                state.allAudioFilesInCurrentStorage,
-              ),
+        entitiesAtCurrentPath: () => entities,
       ));
     });
     on<PlayFile>((event, emit) async {
       emit(state.copyWith(
-        currentAudioFile: () => AudioFile(path: event.file.path),
+        currentAudioFile: () => PlayingAudioFile(path: event.file.path),
       ));
 
       AudioFileMetadata? audioFileMetadata;
@@ -195,16 +200,20 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         emit(state.copyWith(isPlayerExpanded: () => !state.isPlayerExpanded)));
   }
 
-  List<FileSystemEntity> getFilesSystemEntitiesAtPath(
+  Future<List<AudioFileSystemEntity>> getAudioFilesSystemEntitiesAtPath(
     String path,
     List<File> allFiles,
-  ) {
+  ) async {
     allFiles = allFiles.where((file) => file.path.startsWith(path)).toList();
 
-    return allFiles
-            .where((file) => file.parent.path == path)
-            .toList()
-            .cast<FileSystemEntity>() +
+    return (await Future.wait(allFiles
+                .where((file) => file.parent.path == path)
+                .map((file) async => AudioFile(
+                      file,
+                      (await file.stat()).size,
+                    ))
+                .toList()))
+            .cast<AudioFileSystemEntity>() +
         allFiles
             .where((file) => !allFiles
                 .where((file) => file.parent.path == path)
@@ -213,8 +222,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             .map((file) => (split(file.path)..length = split(path).length + 1)
                 .reduce((value, element) => join(value, element)))
             .toSet()
-            .map((path) => Directory(path))
+            .map((path) => AudioDirectory(
+                  Directory(path),
+                  allFiles.where((file) => file.path.startsWith(path)).length,
+                ))
             .toList()
-            .cast<FileSystemEntity>();
+            .cast<AudioFileSystemEntity>();
   }
 }

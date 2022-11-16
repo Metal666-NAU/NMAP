@@ -8,8 +8,8 @@ class HomeState {
   final Storage? loadingStorage;
   final Directory? currentDirectory;
   final List<File> allAudioFilesInCurrentStorage;
-  final List<FileSystemEntity>? entitiesAtCurrentPath;
-  final AudioFile? currentAudioFile;
+  final List<AudioFileSystemEntity>? entitiesAtCurrentPath;
+  final PlayingAudioFile? currentAudioFile;
   final bool isPlayerExpanded;
 
   const HomeState({
@@ -33,8 +33,8 @@ class HomeState {
     Storage? Function()? loadingStorage,
     Directory? Function()? currentDirectory,
     List<File> Function()? allAudioFilesInCurrentStorage,
-    List<FileSystemEntity>? Function()? entitiesAtCurrentPath,
-    AudioFile? Function()? currentAudioFile,
+    List<AudioFileSystemEntity>? Function()? entitiesAtCurrentPath,
+    PlayingAudioFile? Function()? currentAudioFile,
     bool Function()? isPlayerExpanded,
   }) =>
       HomeState(
@@ -75,7 +75,25 @@ class Storage {
   });
 }
 
-class AudioFile {
+class AudioFileSystemEntity<T extends FileSystemEntity> {
+  final T fileSystemEntity;
+
+  const AudioFileSystemEntity(this.fileSystemEntity);
+}
+
+class AudioFile extends AudioFileSystemEntity<File> {
+  final int size;
+
+  const AudioFile(super.fileSystemEntity, this.size);
+}
+
+class AudioDirectory extends AudioFileSystemEntity<Directory> {
+  final int fileCount;
+
+  const AudioDirectory(super.fileSystemEntity, this.fileCount);
+}
+
+class PlayingAudioFile {
   final String path;
   final AudioFileMetadata? metadata;
   final double? progress;
@@ -83,7 +101,7 @@ class AudioFile {
   final bool isPlaying;
   final bool isSeeking;
 
-  AudioFile({
+  PlayingAudioFile({
     required this.path,
     this.metadata,
     this.progress,
@@ -92,7 +110,7 @@ class AudioFile {
     this.isSeeking = false,
   });
 
-  AudioFile copyWith({
+  PlayingAudioFile copyWith({
     String Function()? path,
     AudioFileMetadata? Function()? metadata,
     double? Function()? progress,
@@ -100,7 +118,7 @@ class AudioFile {
     bool Function()? isPlaying,
     bool Function()? isSeeking,
   }) =>
-      AudioFile(
+      PlayingAudioFile(
         path: path == null ? this.path : path.call(),
         metadata: metadata == null ? this.metadata : metadata.call(),
         progress: progress == null ? this.progress : progress.call(),
