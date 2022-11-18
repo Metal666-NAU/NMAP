@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:filesize/filesize.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_breadcrumb/flutter_breadcrumb.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
@@ -122,29 +124,30 @@ class Home extends StatelessWidget {
     )
         externalStorageButton,
   }) =>
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
+      Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
               "Show files in...",
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-          ),
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              children: availableStorages
-                  .map((storage) => externalStorageButton(
-                        context,
-                        storage,
-                        loadingStorage,
-                      ))
-                  .toList(),
+            const SizedBox(height: 16),
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 2,
+                children: availableStorages
+                    .map((storage) => externalStorageButton(
+                          context,
+                          storage,
+                          loadingStorage,
+                        ))
+                    .toList(),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
 
   Widget _externalStorageButton(
@@ -310,7 +313,7 @@ class Home extends StatelessWidget {
     Directory directory,
   ) =>
       Neumorphic(
-        style: NeumorphicStyle(depth: -4),
+        style: const NeumorphicStyle(depth: -4),
         child: ListTile(
           title: Icon(
             Icons.undo_sharp,
@@ -338,7 +341,7 @@ class Home extends StatelessWidget {
         subtitle: Text(entity is AudioDirectory
             ? "Files: ${entity.fileCount}"
             : entity is AudioFile
-                ? "Size: ${entity.size}"
+                ? "Size: ${filesize(entity.size)}"
                 : ""),
         onTap: () {
           if (entity is AudioDirectory) {
@@ -379,7 +382,7 @@ class Home extends StatelessWidget {
             ? const SizedBox()
             : AnimatedContainer(
                 curve: Curves.easeInOutQuint,
-                height: state.isPlayerExpanded ? maxHeight * 0.75 : 80,
+                height: state.isPlayerExpanded ? maxHeight * 0.6 : 80,
                 duration: const Duration(milliseconds: 400),
                 child: NeumorphicButton(
                   padding: EdgeInsets.zero,
@@ -392,6 +395,7 @@ class Home extends StatelessWidget {
                     children: [
                       if (state.isPlayerExpanded)
                         Expanded(
+                          flex: 3,
                           child: Neumorphic(
                             style: const NeumorphicStyle(depth: -6),
                             child: Padding(
@@ -410,115 +414,136 @@ class Home extends StatelessWidget {
                         context,
                         state.currentAudioFile?.progress,
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            if (!state.isPlayerExpanded)
-                              albumArtImage(
-                                context,
-                                state.currentAudioFile?.metadata?.albumArt,
-                              ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: state.isPlayerExpanded
-                                    ? CrossAxisAlignment.center
-                                    : CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    state.currentAudioFile?.metadata?.title !=
-                                            null
-                                        ? state
-                                            .currentAudioFile!.metadata!.title!
-                                        : state.currentAudioFile?.metadata ==
-                                                null
-                                            ? "Loading title..."
-                                            : state.currentAudioFile!.path,
-                                    style: TextStyle(
-                                        fontSize:
-                                            state.isPlayerExpanded ? 30 : 20),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Row(
+                            children: [
+                              if (!state.isPlayerExpanded)
+                                ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 50),
+                                  child: albumArtImage(
+                                    context,
+                                    state.currentAudioFile?.metadata?.albumArt,
                                   ),
-                                  if (state
-                                          .currentAudioFile?.metadata?.artist !=
-                                      null)
-                                    Row(
-                                      mainAxisAlignment: state.isPlayerExpanded
-                                          ? MainAxisAlignment.center
-                                          : MainAxisAlignment.start,
-                                      children: [
-                                        if (state.isPlayerExpanded)
-                                          Text(
-                                            "by ",
-                                            style: TextStyle(
-                                              fontSize: 22,
-                                              color: NeumorphicTheme
-                                                      .defaultTextColor(context)
-                                                  .darken(60),
-                                            ),
-                                          ),
-                                        Text(
-                                          state.currentAudioFile!.metadata!
-                                              .artist!,
-                                          style: TextStyle(
+                                ),
+                              Expanded(
+                                child: FittedBox(
+                                  fit: state.isPlayerExpanded
+                                      ? BoxFit.fitHeight
+                                      : BoxFit.none,
+                                  child: Column(
+                                    crossAxisAlignment: state.isPlayerExpanded
+                                        ? CrossAxisAlignment.center
+                                        : CrossAxisAlignment.start,
+                                    children: [
+                                      AutoSizeText(
+                                        state.currentAudioFile?.metadata
+                                                    ?.title !=
+                                                null
+                                            ? state.currentAudioFile!.metadata!
+                                                .title!
+                                            : state.currentAudioFile
+                                                        ?.metadata ==
+                                                    null
+                                                ? "Loading title..."
+                                                : state.currentAudioFile!.path,
+                                        maxLines: 2,
+                                        style: TextStyle(
                                             fontSize: state.isPlayerExpanded
-                                                ? 22
-                                                : 16,
-                                            color: NeumorphicTheme
-                                                    .defaultTextColor(context)
-                                                .darken(20),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  if (state.isPlayerExpanded &&
-                                      state.currentAudioFile?.metadata?.album !=
+                                                ? 30
+                                                : 20),
+                                      ),
+                                      if (state.currentAudioFile?.metadata
+                                              ?.artist !=
                                           null)
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          "from ",
-                                          style: TextStyle(
-                                            fontSize: 22,
-                                            color: NeumorphicTheme
-                                                    .defaultTextColor(context)
-                                                .darken(60),
-                                          ),
+                                        Row(
+                                          mainAxisAlignment:
+                                              state.isPlayerExpanded
+                                                  ? MainAxisAlignment.center
+                                                  : MainAxisAlignment.start,
+                                          children: [
+                                            if (state.isPlayerExpanded)
+                                              Text(
+                                                "by ",
+                                                style: TextStyle(
+                                                  fontSize: 22,
+                                                  color: NeumorphicTheme
+                                                          .defaultTextColor(
+                                                              context)
+                                                      .darken(60),
+                                                ),
+                                              ),
+                                            Text(
+                                              state.currentAudioFile!.metadata!
+                                                  .artist!,
+                                              style: TextStyle(
+                                                fontSize: state.isPlayerExpanded
+                                                    ? 22
+                                                    : 16,
+                                                color: NeumorphicTheme
+                                                        .defaultTextColor(
+                                                            context)
+                                                    .darken(20),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        Text(
-                                          state.currentAudioFile!.metadata!
-                                              .album!,
-                                          style: TextStyle(
-                                            fontSize: state.isPlayerExpanded
-                                                ? 22
-                                                : 16,
-                                            color: NeumorphicTheme
-                                                    .defaultTextColor(context)
-                                                .darken(20),
-                                          ),
+                                      if (state.isPlayerExpanded &&
+                                          state.currentAudioFile?.metadata
+                                                  ?.album !=
+                                              null)
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              "from ",
+                                              style: TextStyle(
+                                                fontSize: 22,
+                                                color: NeumorphicTheme
+                                                        .defaultTextColor(
+                                                            context)
+                                                    .darken(60),
+                                              ),
+                                            ),
+                                            Text(
+                                              state.currentAudioFile!.metadata!
+                                                  .album!,
+                                              style: TextStyle(
+                                                fontSize: state.isPlayerExpanded
+                                                    ? 22
+                                                    : 16,
+                                                color: NeumorphicTheme
+                                                        .defaultTextColor(
+                                                            context)
+                                                    .darken(20),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                                ],
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
-                            if (!state.isPlayerExpanded)
-                              playButton(
-                                context,
-                                state.currentAudioFile?.progress == null
-                                    ? null
-                                    : state.currentAudioFile!.isPlaying,
-                                false,
-                              ),
-                          ],
+                              if (!state.isPlayerExpanded)
+                                playButton(
+                                  context,
+                                  state.currentAudioFile?.progress == null
+                                      ? null
+                                      : state.currentAudioFile!.isPlaying,
+                                  false,
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                       if (state.isPlayerExpanded)
                         Expanded(
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
+                            clipBehavior: Clip.hardEdge,
                             child: playButton(
                               context,
                               state.currentAudioFile?.progress == null
@@ -573,7 +598,7 @@ class Home extends StatelessWidget {
                 ),
               ),
             )
-          : const NeumorphicProgressIndeterminate();
+          : const NeumorphicProgressIndeterminate(height: 26);
 
   Widget _albumArtImage(
     BuildContext context,

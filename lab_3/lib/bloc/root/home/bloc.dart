@@ -131,7 +131,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         ".flac",
       ].contains(extension(event.file.path))) {
         final Metadata? metadata =
-            await MetadataGod.getMetadata(event.file.path);
+            await MetadataGod.getMetadata(event.file.path)
+                .catchError((_) => null);
 
         if (metadata != null) {
           audioFileMetadata = AudioFileMetadata(
