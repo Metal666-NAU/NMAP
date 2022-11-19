@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:filesize/filesize.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_breadcrumb/flutter_breadcrumb.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 import 'package:metadata_god/metadata_god.dart' as metadata_god;
 import 'package:path/path.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../bloc/root/home/bloc.dart';
 import '../../bloc/root/home/events.dart';
@@ -28,6 +30,7 @@ class Home extends StatelessWidget {
           availableStorages: availableStorages,
           loadingStorage: loadingStorage,
           externalStorageButton: _externalStorageButton,
+          creditsPage: _creditsPage,
         ),
         filePicker: (
           currentStorage,
@@ -45,7 +48,6 @@ class Home extends StatelessWidget {
             context: context,
             currentDirectory: currentDirectory,
             availableItems: availableItems,
-            directoryUpItem: _directoryUpItem,
             fileSystemItem: _fileSystemItem,
           ),
         ),
@@ -123,15 +125,34 @@ class Home extends StatelessWidget {
       Storage? loadingStorage,
     )
         externalStorageButton,
+    required Widget Function(BuildContext context) creditsPage,
   }) =>
       Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              "Show files in...",
-              style: Theme.of(context).textTheme.headlineSmall,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    "Show files in...",
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.info_outline,
+                    color: NeumorphicTheme.defaultTextColor(context),
+                  ),
+                  padding: EdgeInsets.zero,
+                  iconSize: 30,
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: creditsPage),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -271,18 +292,12 @@ class Home extends StatelessWidget {
     required List<AudioFileSystemEntity> availableItems,
     required Widget Function(
       BuildContext context,
-      Directory directory,
-    )
-        directoryUpItem,
-    required Widget Function(
-      BuildContext context,
       AudioFileSystemEntity entity,
     )
         fileSystemItem,
   }) =>
       ListView(
         children: [
-          //directoryUpItem(context, currentDirectory.parent),
           ...(availableItems
                   .whereType<AudioDirectory>()
                   .cast<AudioFileSystemEntity>()
@@ -306,21 +321,6 @@ class Home extends StatelessWidget {
               .map((item) => fileSystemItem(context, item))
               .toList(),
         ],
-      );
-
-  Widget _directoryUpItem(
-    BuildContext context,
-    Directory directory,
-  ) =>
-      Neumorphic(
-        style: const NeumorphicStyle(depth: -4),
-        child: ListTile(
-          title: Icon(
-            Icons.undo_sharp,
-            color: NeumorphicTheme.defaultTextColor(context),
-          ),
-          onTap: () => context.read<HomeBloc>().add(PickDirectory(directory)),
-        ),
       );
 
   Widget _fileSystemItem(
@@ -448,12 +448,13 @@ class Home extends StatelessWidget {
                                                         ?.metadata ==
                                                     null
                                                 ? "Loading title..."
-                                                : state.currentAudioFile!.path,
+                                                : basename(state
+                                                    .currentAudioFile!.path),
                                         maxLines: 2,
                                         style: TextStyle(
-                                            fontSize: state.isPlayerExpanded
-                                                ? 30
-                                                : 20),
+                                          fontSize:
+                                              state.isPlayerExpanded ? 30 : 20,
+                                        ),
                                       ),
                                       if (state.currentAudioFile?.metadata
                                               ?.artist !=
@@ -475,9 +476,10 @@ class Home extends StatelessWidget {
                                                       .darken(60),
                                                 ),
                                               ),
-                                            Text(
+                                            AutoSizeText(
                                               state.currentAudioFile!.metadata!
                                                   .artist!,
+                                              maxLines: 1,
                                               style: TextStyle(
                                                 fontSize: state.isPlayerExpanded
                                                     ? 22
@@ -508,9 +510,10 @@ class Home extends StatelessWidget {
                                                     .darken(60),
                                               ),
                                             ),
-                                            Text(
+                                            AutoSizeText(
                                               state.currentAudioFile!.metadata!
                                                   .album!,
+                                              maxLines: 1,
                                               style: TextStyle(
                                                 fontSize: state.isPlayerExpanded
                                                     ? 22
@@ -644,5 +647,89 @@ class Home extends StatelessWidget {
             onPressed: onPressed,
             icon: icon(),
           );
+  }
+
+  Widget _creditsPage(BuildContext context) {
+    Widget bigText(String text) => Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 36,
+            fontFeatures: [FontFeature.enable('smcp')],
+          ),
+        );
+
+    Widget link(
+      String name, [
+      String? url,
+    ]) =>
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: 2,
+            horizontal: 0,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(fontSize: 22),
+                ),
+              ),
+              NeumorphicButton(
+                style: const NeumorphicStyle(depth: -4),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 4,
+                  horizontal: 16,
+                ),
+                onPressed: () async => await launchUrl(
+                  Uri.parse(url ?? 'https://pub.dev/packages/$name'),
+                  mode: LaunchMode.externalApplication,
+                ),
+                child: Icon(
+                  Icons.arrow_forward,
+                  color: NeumorphicTheme.defaultTextColor(context),
+                ),
+              ),
+            ],
+          ),
+        );
+
+    Widget separator() => const SizedBox(height: 6);
+
+    return Neumorphic(
+      child: Neumorphic(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              bigText('project home'),
+              link(
+                "lab_3",
+                "https://github.com/Metal666-NAU/NMAP/tree/main/lab_3",
+              ),
+              separator(),
+              bigText('used libraries'),
+              ...[
+                "audioplayers",
+                "auto_size_text",
+                "external_path",
+                "filesize",
+                "flutter_bloc",
+                "flutter_breadcrumb",
+                "flutter_neumorphic",
+                "metadata_god",
+                "path",
+                "permission_handler",
+                "url_launcher",
+              ].map((dependency) => link(dependency)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

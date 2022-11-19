@@ -118,6 +118,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       ));
     });
     on<PlayFile>((event, emit) async {
+      if (event.file.path == state.currentAudioFile?.path) {
+        await _audioPlayer.seek(Duration.zero);
+
+        return;
+      }
+
       emit(state.copyWith(
         currentAudioFile: () => PlayingAudioFile(path: event.file.path),
       ));
